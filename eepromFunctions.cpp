@@ -14,6 +14,18 @@ void readEeprom()
     Settings.lightOff = config.getDouble("lightOff", 0);
     Settings.wifiSsid = config.getString("wifiSsid", "");
     Settings.wifiPassword = config.getString("wifiPassword", "");
+    Settings.deviceOneName = config.getString("deviceOneName", "");
+    Settings.deviceTwoName = config.getString("deviceTwoName", "");
+    Settings.deviceThreeName = config.getString("deviceThreeName", "");
+    Settings.deviceFourName = config.getString("deviceFourName", "");
+    Settings.deviceFiveName = config.getString("deviceFiveName", "");
+    Settings.deviceSixName = config.getString("deviceSixName", "");
+    Settings.deviceSevenName = config.getString("deviceSevenName", "");
+    Settings.deviceEightName = config.getString("deviceEightName", "");
+    Settings.lightGPIO = config.getInt("lightGPIO", 0);
+    Settings.heatingGPIO = config.getInt("heatingGPIO", 0);
+    Settings.coolingGPIO = config.getInt("coolingGPIO", 0);
+    Settings.atoGPIO = config.getInt("atoGPIO", 0);
 }
 
 // Options menu sets writeEeprom to true, using the assumption that settings may have been changed.
@@ -29,6 +41,18 @@ void writeEeprom()
         config.putDouble("lightOff", Settings.lightOff);
         config.putString("wifiSsid", Settings.wifiSsid);
         config.putString("wifiPassword", Settings.wifiPassword);
+        config.putString("deviceOneName", Settings.deviceOneName);
+        config.putString("deviceTwoName", Settings.deviceTwoName);
+        config.putString("deviceThreeName", Settings.deviceThreeName);
+        config.putString("deviceFourName", Settings.deviceFourName);
+        config.putString("deviceFiveName", Settings.deviceFiveName);
+        config.putString("deviceSixName", Settings.deviceSixName);
+        config.putString("deviceSevenName", Settings.deviceSevenName);
+        config.putString("deviceEightName", Settings.deviceEightName);
+        config.putInt("lightGPIO", Settings.lightGPIO);
+        config.putInt("heatingGPIO", Settings.heatingGPIO);
+        config.putInt("coolingGPIO", Settings.coolingGPIO);
+        config.putInt("atoGPIO", Settings.atoGPIO);
         eepromWrite = false;
     }
 }

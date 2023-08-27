@@ -19,8 +19,20 @@ public:
     double tempAlert;
     double lightOn;
     double lightOff;
+    int lightGPIO;
+    int heatingGPIO;
+    int coolingGPIO;
+    int atoGPIO;
     String wifiSsid;
     String wifiPassword;
+    String deviceOneName;
+    String deviceTwoName;
+    String deviceThreeName;
+    String deviceFourName;
+    String deviceFiveName;
+    String deviceSixName;
+    String deviceSevenName;
+    String deviceEightName;
 };
 
 extern String menuArray[11][4];
@@ -33,6 +45,8 @@ extern int buttonUp;
 extern int buttonDown;
 extern int buttonBack;
 extern int buttonOK;
+extern double tempLog[24];
+extern double currentTemp;
 
 extern String selectIndicator;
 
@@ -41,6 +55,7 @@ extern bool waterChange;
 extern bool eepromWrite;
 extern bool selectableMenu;
 extern LiquidCrystal_I2C lcd;
+extern struct tm timeinfo;
 
 void inputMonitor();
 void tempControl();
@@ -56,5 +71,7 @@ void optionsMenuMore();
 void menuChange();
 void scanSSID();
 void setWifi();
+void setRTC();
+void timeMonitor();
 
 #endif
