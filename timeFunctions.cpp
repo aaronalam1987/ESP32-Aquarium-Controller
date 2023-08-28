@@ -27,15 +27,18 @@ void timeMonitor()
     {
         // Serial.println("Time changed");
         //  We have passed an hour, update double temp log.
-        tempLog[rtc.getHour(true)] = currentTemp;
+        tempLog[0][rtc.getHour(true)] = currentTemp;
         // Serial.println(tempLog[rtc.getHour(true)]);
         timeChange = rtc.getHour(true);
     }
-    // Time is midnight, reset RTC from NTP pool and clear logged temperatures.
+    // Time is midnight, reset RTC from NTP pool, move current tempLog to previous tempLog location and clear current tempLog.
     if (rtc.getHour() == '0')
     {
-        // Serial.println("its midnight?");
-        tempLog[24] = {0};
+        for (int i = 0; i < 24; i++)
+        {
+            tempLog[1][i] = tempLog[0][i];
+            tempLog[0][i] = 0.0;
+        }
         setRTC();
     }
     else

@@ -45,7 +45,7 @@ extern int buttonUp;
 extern int buttonDown;
 extern int buttonBack;
 extern int buttonOK;
-extern double tempLog[24];
+extern double tempLog[2][24];
 extern double currentTemp;
 
 extern String selectIndicator;

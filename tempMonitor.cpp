@@ -18,7 +18,7 @@ void monitorTempFunction(void *parameter)
         currentTemp = tempSensor.getTempCByIndex(0);
 
         // Convert to string and assign currentTemp value to the menuArray
-        menuArray[0][0] = "Temp:" + String(currentTemp).substring(0, 4) + " Mode:" + mode;
+        menuArray[0][0] = "Temp:" + String(currentTemp).substring(0, 4) + " Mode: " + mode;
 
         // Check to see if temperature is higher than the variant allows for.
         // If so, disable heating relay and enable cooling.

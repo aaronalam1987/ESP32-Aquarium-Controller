@@ -6,6 +6,8 @@
 AsyncWebServer server(80);
 extern struct settings Settings;
 extern TaskHandle_t doWifi;
+extern struct connectedEquipment deviceOne,
+    deviceTwo, deviceThree, deviceFour, deviceFive, deviceSix, deviceSeven, deviceEight;
 
 void createWifiTask()
 {
@@ -148,22 +150,15 @@ const char webserver_index[] PROGMEM = R"(
     <center>
         <h1>Aquarium Monitor</h1><br />
         <h3>Equipment Status</h3>
-        %DEVICEONENAME%: <b>%D1STATUS%</b><br />
-        %DEVICETWONAME%: <b>%D2STATUS%</b><br />
-        %DEVICETHREENAME%: <b>%D3STATUS%</b><br />
-        %DEVICEFOURNAME%: <b>%D4STATUS%</b><br />
-        %DEVICEFIVENAME%: <b>%D5STATUS%</b><br />
-        %DEVICESIXNAME%: <b>%D6STATUS%</b><br />
-        %DEVICESEVENNAME%: <b>%D7STATUS%</b><br />
-        %DEVICEEIGHTNAME%: <b>%D8STATUS%</b><br />
+        %EQUIPMENTSTATUS%
         <h3>Current Temperature: <br /><i>%CURRENTTEMP%</i></h3><br />
-        <h3>Temperature over 24 hours</h3>
+        <h3>Temperature over current 24 hours</h3>
         <h5><i>This resets daily at 00:00</i></h5>
         <canvas id="tempChart" style="width:400px;max-width:600px"></canvas>
         <script>
             Chart.defaults.global.defaultFontColor = 'white';
-            const xValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
-            const yValues = [%TEMP0%, %TEMP1%, %TEMP2%, %TEMP3%, %TEMP4%, %TEMP5%, %TEMP6%, %TEMP7%, %TEMP8%, %TEMP9%, %TEMP10%, %TEMP11%, %TEMP12%, %TEMP13%, %TEMP14%, %TEMP15%, %TEMP16%, %TEMP17%, %TEMP18%, %TEMP19%, %TEMP20%, %TEMP21%, %TEMP22%, %TEMP23%, %TEMP24%];
+            const xValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+            const yValues = [%TEMPCHART%];
             new Chart("tempChart", {
                 type: "line",
                 data: {
@@ -188,11 +183,57 @@ const char webserver_index[] PROGMEM = R"(
                 }
             });
         </script>
+        <h3>Temperature over previous 24 hours</h3>
+        <canvas id="tempChartPrev" style="width:400px;max-width:600px"></canvas>
+        <script>
+            Chart.defaults.global.defaultFontColor = 'white';
+            const xValuesPrev = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+            const yValuesPrev = [%TEMPCHARTPREV%];
+            new Chart("tempChartPrev", {
+                type: "line",
+                data: {
+                    labels: xValuesPrev,
+                    datasets: [{
+                        fill: true,
+                        lineTension: 0,
+                        backgroundColor: "#1b749e",
+                        borderColor: "white",
+                        color: "white",
+                        data: yValuesPrev,
+                        label: "Temperature over previous 24 hours",
+                    }]
+                },
+                options: {
+                    legend: {
+                        display: true,
+                    },
+                    scales: {
+                        yAxes: [{ ticks: { min: 0, max: 50 } }],
+                    }
+                }
+            });
+        </script>
+        <h4>Average Temperature <i>(based off 24 hour reading)</i>:<br /><i>%AVGTEMP%</i></h4><br />
     </center>
 </body>
 
 </html>)";
 
+String status(int status)
+{
+    // Converts the status int into a readable string, to be used in menus.
+    // 1 represents the relay being "off" as connected devices are connected via "normally closed" to be safe in the event of some sort of system failure.
+    String currStatus = "";
+    if (status == 0)
+    {
+        currStatus = " Off";
+    }
+    else
+    {
+        currStatus = " On ";
+    }
+    return currStatus;
+}
 String processor(const String &var)
 {
     if (var == "WIFISSID")
@@ -235,109 +276,55 @@ String processor(const String &var)
     {
         return String(Settings.deviceEightName);
     }
+    else if (var == "EQUIPMENTSTATUS")
+    {
+        return String(deviceOne.name + ":" + status(deviceOne.status) + "<br />" + deviceTwo.name + ":" + status(deviceTwo.status) + "<br />" + deviceThree.name + ":" + status(deviceThree.status) + "<br />" + deviceFour.name + ":" + status(deviceFour.status) + "<br />" + deviceFive.name + ":" + status(deviceFive.status) + "<br />" + deviceSix.name + ":" + status(deviceSix.status) + "<br />" + deviceSeven.name + ":" + status(deviceSeven.status) + "<br />" + deviceEight.name + ":" + status(deviceEight.status) + "<br />");
+    }
     else if (var == "CURRENTTEMP")
     {
         return String(currentTemp);
     }
-    else if (var == "TEMP0")
+    else if (var == "TEMPCHART")
     {
-        return String(tempLog[0]);
+        String tempChart;
+        for (int i = 0; i < 24; i++)
+        {
+            if (i < 23)
+            {
+                tempChart += String(tempLog[0][i]) + ",";
+            }
+            else
+            {
+                tempChart += String(tempLog[0][i]);
+            }
+        }
+        return String(tempChart);
     }
-    else if (var == "TEMP1")
+    else if (var == "TEMPCHARTPREV")
     {
-        return String(tempLog[1]);
+        String tempChart;
+        for (int i = 0; i < 24; i++)
+        {
+            if (i < 23)
+            {
+                tempChart += String(tempLog[1][i]) + ",";
+            }
+            else
+            {
+                tempChart += String(tempLog[1][i]);
+            }
+        }
+        return String(tempChart);
     }
-    else if (var == "TEMP2")
+    else if (var == "AVGTEMP")
     {
-        return String(tempLog[2]);
-    }
-    else if (var == "TEMP3")
-    {
-        return String(tempLog[3]);
-    }
-    else if (var == "TEMP4")
-    {
-        return String(tempLog[4]);
-    }
-    else if (var == "TEMP5")
-    {
-        return String(tempLog[5]);
-    }
-    else if (var == "TEMP6")
-    {
-        return String(tempLog[6]);
-    }
-    else if (var == "TEMP7")
-    {
-        return String(tempLog[7]);
-    }
-    else if (var == "TEMP8")
-    {
-        return String(tempLog[8]);
-    }
-    else if (var == "TEMP9")
-    {
-        return String(tempLog[9]);
-    }
-    else if (var == "TEMP10")
-    {
-        return String(tempLog[10]);
-    }
-    else if (var == "TEMP11")
-    {
-        return String(tempLog[11]);
-    }
-    else if (var == "TEMP12")
-    {
-        return String(tempLog[12]);
-    }
-    else if (var == "TEMP13")
-    {
-        return String(tempLog[13]);
-    }
-    else if (var == "TEMP14")
-    {
-        return String(tempLog[14]);
-    }
-    else if (var == "TEMP15")
-    {
-        return String(tempLog[15]);
-    }
-    else if (var == "TEMP16")
-    {
-        return String(tempLog[16]);
-    }
-    else if (var == "TEMP17")
-    {
-        return String(tempLog[17]);
-    }
-    else if (var == "TEMP18")
-    {
-        return String(tempLog[18]);
-    }
-    else if (var == "TEMP19")
-    {
-        return String(tempLog[19]);
-    }
-    else if (var == "TEMP20")
-    {
-        return String(tempLog[20]);
-    }
-    else if (var == "TEMP21")
-    {
-        return String(tempLog[21]);
-    }
-    else if (var == "TEMP22")
-    {
-        return String(tempLog[22]);
-    }
-    else if (var == "TEMP23")
-    {
-        return String(tempLog[23]);
-    }
-    else if (var == "TEMP24")
-    {
-        return String(tempLog[24]);
+        double avgTemp;
+        for (int i = 0; i < 24; i++)
+        {
+            avgTemp += tempLog[1][i];
+        }
+        double avg = avgTemp / 24;
+        return String(avg);
     }
     return String();
 }

@@ -8,7 +8,7 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 TaskHandle_t doWifi;
 TaskHandle_t monitorTemp;
 
-// Ints used to keep track of menus and to assign buttons.
+// Initialise global ints used to keep track of menus and to assign buttons.
 int currentMenu = 0;
 int previousMenu = 0;
 int menuChanged = 0;
@@ -18,7 +18,7 @@ int buttonDown = 0;
 int buttonBack = 0;
 int buttonOK = 0;
 
-double tempLog[24] = {0};
+double tempLog[2][24] = {{0}};
 
 // Bools used to identify if an alert is present, if waterchange/feed function is enabled, if eeprom should be written and to identify selectable menus.
 bool alert = false;
