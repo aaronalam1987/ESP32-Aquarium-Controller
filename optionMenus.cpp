@@ -2,20 +2,14 @@
 #include <map>
 extern Menus menu;
 
-void menuChange(int currMenu, int prevMenu)
-{
-    // Tiny but useful function, used to navigate options menus.
-    // currentMenu = currMenu;
-    // previousMenu = prevMenu;
-}
-
 void optionsMenu()
 {
+    menu.clearMenu();
     // Set our menu.
-    menu.setMenu(0, 0, "Equipment Control   ");
-    menu.setMenu(0, 1, "Temperature Control ");
-    menu.setMenu(0, 2, "Light Timer Settings");
-    menu.setMenu(0, 3, "Settings (via WiFi) ");
+    menu.setMenu(0, menuLineOne, "Equipment Control   ");
+    menu.setMenu(0, menuLineTwo, "Temperature Control ");
+    menu.setMenu(0, menuLineThree, "Light Timer Settings");
+    menu.setMenu(0, menuLineFour, "Settings (via WiFi) ");
     // Is selectable.
     menu.menuSelectable(true);
 

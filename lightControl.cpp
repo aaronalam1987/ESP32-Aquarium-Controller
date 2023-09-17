@@ -37,8 +37,4 @@ void lightControl()
         // OK press on menuSelect 3 is "save".
         menu.setCurrentMenu(0);
     }
-
-    // menuArray[5][0] = "Light On: " + String(Settings.lightOn).substring(0, 4);
-    // menuArray[5][1] = "Light Off: " + String(Settings.lightOff).substring(0, 4);
-    // menuArray[5][2] = "";
 }

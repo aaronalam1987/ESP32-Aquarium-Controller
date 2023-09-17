@@ -4,10 +4,10 @@ extern Menus menu;
 void tempControl()
 {
   menu.menuSelectable(true);
-  menu.setMenu(0, 0, "Target Temp: " + String(settings.targetTemp));
-  menu.setMenu(0, 1, "Temp Variant: " + String(settings.tempAlert));
-  menu.setMenu(0, 2, "Temp Alert: " + String(settings.tempAlert));
-  menu.setMenu(0, 3, "Save                ");
+  menu.setMenu(0, menuLineOne, "Target Temp: " + String(settings.targetTemp));
+  menu.setMenu(0, menuLineTwo, "Temp Variant: " + String(settings.tempAlert));
+  menu.setMenu(0, menuLineThree, "Temp Alert: " + String(settings.tempAlert));
+  menu.setMenu(0, menuLineFour, "Save                ");
   // OK button and either UP or DOWN button increments and decrements the value specified.
   if (buttonOK == LOW && buttonUp == LOW)
   {

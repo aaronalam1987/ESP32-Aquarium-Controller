@@ -161,38 +161,6 @@ public:
     }
 };
 
-struct connectedEquipment
-{
-public:
-    String name;
-    int status;
-    int pin;
-};
-
-/*struct settings
-{
-public:
-    double targetTemp;
-    double tempVariant;
-    double tempAlert;
-    double lightOn;
-    double lightOff;
-    int lightGPIO;
-    int heatingGPIO;
-    int coolingGPIO;
-    int atoGPIO;
-    String wifiSsid;
-    String wifiPassword;
-    String deviceOneName;
-    String deviceTwoName;
-    String deviceThreeName;
-    String deviceFourName;
-    String deviceFiveName;
-    String deviceSixName;
-    String deviceSevenName;
-    String deviceEightName;
-};*/
-
 class Settings
 {
 private:
@@ -268,6 +236,70 @@ public:
     }
 };
 
+class System
+{
+private:
+    String currentTime;
+    String alert;
+    bool eepromWrite;
+    int statusArray[8][2];
+
+public:
+    System() : currentTime{"Not Set"}, alert{false}, eepromWrite{false}, statusArray{{27, 1}, {26, 1}, {25, 1}, {33, 1}, {32, 1}, {17, 1}, {18, 1}, {19, 1}} {};
+
+    void setCurrentTime(String time)
+    {
+        currentTime = time;
+    }
+
+    String getCurrentTime()
+    {
+        return currentTime;
+    }
+
+    void setAlert(String _alert)
+    {
+        alert = _alert;
+    }
+
+    String getAlert()
+    {
+        return alert;
+    }
+
+    void setEepromWrite(bool eWrite)
+    {
+        eepromWrite = eWrite;
+    }
+
+    bool getEepromWrite()
+    {
+        return eepromWrite;
+    }
+
+    void setStatusArray(int col, int row, int value)
+    {
+        statusArray[col][row] = value;
+    }
+
+    int getStatusArray(int col, int row)
+    {
+        return statusArray[col][row];
+    }
+
+    String getEquipmentStatus(int col)
+    {
+        if (statusArray[col][1] == 1)
+        {
+            return String(" - On ");
+        }
+        else
+        {
+            return String(" - Off");
+        }
+    }
+};
+
 class WIFI
 {
 private:
@@ -291,7 +323,7 @@ extern int buttonUp;
 extern int buttonDown;
 extern int buttonBack;
 extern int buttonOK;
-extern double tempLog[2][24];
+// extern double tempLog[2][24];
 
 extern bool alert;
 
@@ -302,7 +334,7 @@ extern struct tm timeinfo;
 void inputMonitor();
 void tempControl();
 void clearLine(int line);
-
+void equipmentControl();
 void monitorTempFunction(void *parameter);
 void doWiFi(void *parameter);
 void webServer();

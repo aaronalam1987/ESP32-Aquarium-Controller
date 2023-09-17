@@ -8,6 +8,7 @@ WIFI wifi;
 extern TempMonitor tempMonitor;
 extern Menus menu;
 extern Settings settings;
+extern System sys;
 extern TaskHandle_t doWifi;
 extern struct connectedEquipment deviceOne,
     deviceTwo, deviceThree, deviceFour, deviceFive, deviceSix, deviceSeven, deviceEight;
@@ -283,7 +284,7 @@ String processor(const String &var)
     }
     else if (var == "EQUIPMENTSTATUS")
     {
-        return String(deviceOne.name + ":" + status(deviceOne.status) + "<br />" + deviceTwo.name + ":" + status(deviceTwo.status) + "<br />" + deviceThree.name + ":" + status(deviceThree.status) + "<br />" + deviceFour.name + ":" + status(deviceFour.status) + "<br />" + deviceFive.name + ":" + status(deviceFive.status) + "<br />" + deviceSix.name + ":" + status(deviceSix.status) + "<br />" + deviceSeven.name + ":" + status(deviceSeven.status) + "<br />" + deviceEight.name + ":" + status(deviceEight.status) + "<br />");
+        return String(settings.deviceOneName + "<br />" + settings.deviceTwoName + "<br />" + settings.deviceThreeName + "<br />" + settings.deviceFourName + "<br />" + settings.deviceFiveName + "<br />" + settings.deviceSixName + "<br />" + settings.deviceSevenName + "<br />" + settings.deviceEightName + "<br />");
     }
     else if (var == "CURRENTTEMP")
     {
@@ -296,11 +297,13 @@ String processor(const String &var)
         {
             if (i < 23)
             {
-                tempChart += String(tempLog[0][i]) + ",";
+                tempChart += String(tempMonitor.getTempLog(0, i)) + ",";
+                // tempChart += String(tempLog[0][i]) + ",";
             }
             else
             {
-                tempChart += String(tempLog[0][i]);
+                tempChart += String(tempMonitor.getTempLog(0, i));
+                // tempChart += String(tempLog[0][i]);
             }
         }
         return String(tempChart);
@@ -312,11 +315,13 @@ String processor(const String &var)
         {
             if (i < 23)
             {
-                tempChart += String(tempLog[1][i]) + ",";
+                tempChart += String(tempMonitor.getTempLog(1, i)) + ",";
+                // tempChart += String(tempLog[1][i]) + ",";
             }
             else
             {
-                tempChart += String(tempLog[1][i]);
+                tempChart += String(tempMonitor.getTempLog(1, i));
+                // tempChart += String(tempLog[1][i]);
             }
         }
         return String(tempChart);
@@ -326,7 +331,8 @@ String processor(const String &var)
         double avgTemp;
         for (int i = 0; i < 24; i++)
         {
-            avgTemp += tempLog[1][i];
+            avgTemp += tempMonitor.getTempLog(1, i);
+            // avgTemp += tempLog[1][i];
         }
         double avg = avgTemp / 24;
         return String(avg);
@@ -371,7 +377,6 @@ void doWiFi(void *parameter)
                 vTaskDelay(500);
             }
             // Connected - amend menuArray with the current IP address.
-            // menuArray[0][1] = "IP: " + String(WiFi.localIP().toString().c_str());
             wifi.setStatus("IP: " + String(WiFi.localIP().toString().c_str()));
             // Assign currWebPage pointer to webserver index page.
             currWebPage = webserver_index;
@@ -385,6 +390,7 @@ void doWiFi(void *parameter)
         {
             // Settings SSID is blank and thus, no useable credentials exist.
             // menuArray[0][1] = "IP: SSID Not Set";
+            wifi.setStatus("IP: SSID Not Set    ");
         }
     }
 }
@@ -397,32 +403,33 @@ void webServer()
     // GET request
     web_server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
                   {
-    //Get "submitted" param letting us know that the form has been submitted.
-    if(request->hasParam("submitted")){
-        //Assign values to settings struct.
-        settings.wifiSsid = request->getParam("wifiSSID")->value();
-        settings.wifiPassword = request->getParam("wifiPassword")->value();
-        settings.deviceOneName = request->getParam("deviceOne")->value();
-        settings.deviceTwoName = request->getParam("deviceTwo")->value();
-        settings.deviceThreeName = request->getParam("deviceThree")->value();
-        settings.deviceFourName = request->getParam("deviceFour")->value();
-        settings.deviceFiveName = request->getParam("deviceFive")->value();
-        settings.deviceSixName = request->getParam("deviceSix")->value();
-        settings.deviceSevenName = request->getParam("deviceSeven")->value();
-        settings.deviceEightName = request->getParam("deviceEight")->value();
-        settings.lightGPIO = request->getParam("lighting")->value().toInt();
-        settings.heatingGPIO = request->getParam("heating")->value().toInt();
-        settings.coolingGPIO = request->getParam("cooling")->value().toInt();
-        settings.atoGPIO = request->getParam("ato")->value().toInt();
-    }
-    //Let user know that the settings have been saved, start a new WiFi connect task to connect to new credentials.
-    //Return to init screen.
-        request->send(200, "text/html", "<center>Settings Saved! <br />Returning to main screen.</center>"); 
-                menu.setCurrentMenu(menuInit); 
-                currWebPage = webserver_index;
-                delay(200);
-                createWifiTask();
-                eepromWrite = true; });
+                      // Get "submitted" param letting us know that the form has been submitted.
+                      if (request->hasParam("submitted"))
+                      {
+                          // Assign values to settings struct.
+                          settings.wifiSsid = request->getParam("wifiSSID")->value();
+                          settings.wifiPassword = request->getParam("wifiPassword")->value();
+                          settings.deviceOneName = request->getParam("deviceOne")->value();
+                          settings.deviceTwoName = request->getParam("deviceTwo")->value();
+                          settings.deviceThreeName = request->getParam("deviceThree")->value();
+                          settings.deviceFourName = request->getParam("deviceFour")->value();
+                          settings.deviceFiveName = request->getParam("deviceFive")->value();
+                          settings.deviceSixName = request->getParam("deviceSix")->value();
+                          settings.deviceSevenName = request->getParam("deviceSeven")->value();
+                          settings.deviceEightName = request->getParam("deviceEight")->value();
+                          settings.lightGPIO = request->getParam("lighting")->value().toInt();
+                          settings.heatingGPIO = request->getParam("heating")->value().toInt();
+                          settings.coolingGPIO = request->getParam("cooling")->value().toInt();
+                          settings.atoGPIO = request->getParam("ato")->value().toInt();
+                      }
+                      // Let user know that the settings have been saved, start a new WiFi connect task to connect to new credentials.
+                      // Return to init screen.
+                      request->send(200, "text/html", "<center>Settings Saved! <br />Returning to main screen.</center>");
+                      menu.setCurrentMenu(menuInit);
+                      currWebPage = webserver_index;
+                      delay(200);
+                      createWifiTask();
+                      sys.setEepromWrite(true); });
 
     web_server.onNotFound(notFound);
     web_server.begin();
@@ -441,6 +448,7 @@ void settingsConfig()
     if (WiFi.getMode() == WIFI_MODE_AP)
     {
         wifi.setStatus(WiFi.softAPIP().toString().c_str());
+        menu.clearMenu();
         menu.setMenu(0, menuLineOne, "Connect to SSID:    ");
         menu.setMenu(0, menuLineTwo, "AquariumController  ");
         menu.setMenu(0, menuLineThree, "Navigate to:      ");

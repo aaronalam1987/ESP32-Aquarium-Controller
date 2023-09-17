@@ -2,6 +2,8 @@
 
 extern Settings settings;
 extern Menus menu;
+extern System sys;
+
 OneWire oneWire(23);
 DallasTemperature tempSensor(&oneWire);
 
@@ -19,10 +21,22 @@ void monitorTempFunction(void *parameter)
         // If so, disable heating relay and enable cooling.
         if (tempMonitor.getCurrentTemp() - settings.targetTemp >= settings.tempVariant)
         {
-            // If currentMenu is set to 2, we don't want to act as this menu allows control over connected equipment.
-            // Automatic control will resume once this menu is not active.
-            if (menu.getCurrentMenu() != equipmentMenu)
+            // This checks to see if the GPIO set during configuration matches a GPIO in our statusArray, if so, it disables heating
+            // and looks for the matching cooling gpio which is then enabled, essentially this just allows us to display "On" or "Off" in the menus.
+            for (int i = 0; i < 8; i++)
             {
+                if (sys.getStatusArray(i, 0) == settings.heatingGPIO)
+                {
+                    sys.setStatusArray(i, 1, gpioOFF);
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if (sys.getStatusArray(i, 0) == settings.coolingGPIO)
+                        {
+                            sys.setStatusArray(i, 1, gpioON);
+                        }
+                    }
+                }
+                // This is responsible for switching the relays on or off.
                 digitalWrite(settings.heatingGPIO, gpioOFF);
                 digitalWrite(settings.coolingGPIO, gpioON);
                 tempMonitor.setMode("Cool");
@@ -33,34 +47,49 @@ void monitorTempFunction(void *parameter)
         // If so, disable cooling relay and enable heating.
         else if (settings.targetTemp - tempMonitor.getCurrentTemp() >= settings.tempVariant)
         {
-            if (menu.getCurrentMenu() != equipmentMenu)
+            for (int i = 0; i < 8; i++)
             {
-                digitalWrite(settings.heatingGPIO, gpioON);
-                digitalWrite(settings.coolingGPIO, gpioOFF);
-                tempMonitor.setMode("Heat");
+                if (sys.getStatusArray(i, 0) == settings.coolingGPIO)
+                {
+                    sys.setStatusArray(i, 1, gpioOFF);
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if (sys.getStatusArray(i, 0) == settings.heatingGPIO)
+                        {
+                            sys.setStatusArray(i, 1, gpioON);
+                        }
+                    }
+                }
             }
+
+            digitalWrite(settings.heatingGPIO, gpioON);
+            digitalWrite(settings.coolingGPIO, gpioOFF);
+            tempMonitor.setMode("Heat");
         }
         // Temperature is in range of variant, disable heating and cooling and set mode to "Off".
         else
         {
-            if (menu.getCurrentMenu() != equipmentMenu)
+            for (int i = 0; i < 8; i++)
             {
-                digitalWrite(settings.heatingGPIO, gpioOFF);
-                digitalWrite(settings.coolingGPIO, gpioOFF);
-                tempMonitor.setMode("Off");
+                if (sys.getStatusArray(i, 0) == settings.heatingGPIO || settings.coolingGPIO)
+                {
+                    sys.setStatusArray(i, 1, gpioOFF);
+                }
             }
+
+            digitalWrite(settings.heatingGPIO, gpioOFF);
+            digitalWrite(settings.coolingGPIO, gpioOFF);
+            tempMonitor.setMode("Off");
         }
 
         // Check temperature compared to alert range, assign appropriate alerts if needed.
         if (tempMonitor.getCurrentTemp() - settings.targetTemp >= settings.tempAlert || settings.targetTemp - tempMonitor.getCurrentTemp() >= settings.tempAlert)
         {
-            // menuArray[0][2] = "Alerts:Temp Warning!";
-            alert = true;
+            sys.setAlert("Temp Warning!");
         }
         else
         {
-            // menuArray[0][2] = "Alerts:None         ";
-            alert = false;
+            sys.setAlert("None");
         }
         vTaskDelay(5000 / portTICK_RATE_MS);
     }
