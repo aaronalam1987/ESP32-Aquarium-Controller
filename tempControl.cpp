@@ -1,50 +1,49 @@
 #include "global.h"
-extern struct settings Settings;
-
+extern Settings settings;
+extern Menus menu;
 void tempControl()
 {
-  selectableMenu = true;
+  menu.menuSelectable(true);
+  menu.setMenu(0, 0, "Target Temp: " + String(settings.targetTemp));
+  menu.setMenu(0, 1, "Temp Variant: " + String(settings.tempAlert));
+  menu.setMenu(0, 2, "Temp Alert: " + String(settings.tempAlert));
+  menu.setMenu(0, 3, "Save                ");
   // OK button and either UP or DOWN button increments and decrements the value specified.
   if (buttonOK == LOW && buttonUp == LOW)
   {
-    switch (menuSelect)
+    switch (menu.getMenuSelect())
     {
     case 0:
-      Settings.targetTemp += 0.1;
+      settings.targetTemp += 0.1;
       break;
     case 1:
-      Settings.tempVariant += 0.1;
+      settings.tempVariant += 0.1;
       break;
     case 2:
-      Settings.tempAlert += 0.1;
+      settings.tempAlert += 0.1;
       break;
     }
   }
 
   if (buttonOK == LOW && buttonDown == LOW)
   {
-    switch (menuSelect)
+    switch (menu.getMenuSelect())
     {
     case 0:
-      Settings.targetTemp -= 0.1;
+      settings.targetTemp -= 0.1;
       break;
     case 1:
-      Settings.tempVariant -= 0.1;
+      settings.tempVariant -= 0.1;
       break;
     case 2:
-      Settings.tempAlert -= 0.1;
+      settings.tempAlert -= 0.1;
       break;
     }
   }
 
-  if (buttonOK == LOW && menuSelect == 3)
+  if (buttonOK == LOW && menu.getMenuSelect() == menuLineFour)
   {
-    // OK press on menuSelect 3 is "save".
-    currentMenu = 0;
+    // OK press on menuLineFour is "save".
+    menu.setCurrentMenu(menuInit);
   }
-
-  // Convert targetTemp to string and amend our menu array.
-  menuArray[3][0] = "Target Temp: " + String(Settings.targetTemp).substring(0, 4);
-  menuArray[3][1] = "Temp Variant: " + String(Settings.tempVariant).substring(0, 4);
-  menuArray[3][2] = "Temp Alert: " + String(Settings.tempAlert).substring(0, 4);
 }

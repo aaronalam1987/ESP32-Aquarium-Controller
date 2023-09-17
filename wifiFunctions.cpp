@@ -3,11 +3,15 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
-AsyncWebServer server(80);
-extern struct settings Settings;
+AsyncWebServer web_server(80);
+WIFI wifi;
+extern TempMonitor tempMonitor;
+extern Menus menu;
+extern Settings settings;
 extern TaskHandle_t doWifi;
 extern struct connectedEquipment deviceOne,
     deviceTwo, deviceThree, deviceFour, deviceFive, deviceSix, deviceSeven, deviceEight;
+const char *currWebPage{0};
 
 void createWifiTask()
 {
@@ -234,47 +238,48 @@ String status(int status)
     }
     return currStatus;
 }
+
 String processor(const String &var)
 {
     if (var == "WIFISSID")
     {
-        return String(Settings.wifiSsid);
+        return String(settings.wifiSsid);
     }
     else if (var == "WIFIPW")
     {
-        return String(Settings.wifiPassword);
+        return String(settings.wifiPassword);
     }
     else if (var == "DEVICEONENAME")
     {
-        return String(Settings.deviceOneName);
+        return String(settings.deviceOneName);
     }
     else if (var == "DEVICETWONAME")
     {
-        return String(Settings.deviceTwoName);
+        return String(settings.deviceTwoName);
     }
     else if (var == "DEVICETHREENAME")
     {
-        return String(Settings.deviceThreeName);
+        return String(settings.deviceThreeName);
     }
     else if (var == "DEVICEFOURNAME")
     {
-        return String(Settings.deviceFourName);
+        return String(settings.deviceFourName);
     }
     else if (var == "DEVICEFIVENAME")
     {
-        return String(Settings.deviceFiveName);
+        return String(settings.deviceFiveName);
     }
     else if (var == "DEVICESIXNAME")
     {
-        return String(Settings.deviceSixName);
+        return String(settings.deviceSixName);
     }
     else if (var == "DEVICESEVENNAME")
     {
-        return String(Settings.deviceSevenName);
+        return String(settings.deviceSevenName);
     }
     else if (var == "DEVICEEIGHTNAME")
     {
-        return String(Settings.deviceEightName);
+        return String(settings.deviceEightName);
     }
     else if (var == "EQUIPMENTSTATUS")
     {
@@ -282,7 +287,7 @@ String processor(const String &var)
     }
     else if (var == "CURRENTTEMP")
     {
-        return String(currentTemp);
+        return String(tempMonitor.getCurrentTemp());
     }
     else if (var == "TEMPCHART")
     {
@@ -333,13 +338,13 @@ void doWiFi(void *parameter)
 {
     for (;;)
     {
-        if (Settings.wifiSsid != "")
+        if (settings.wifiSsid != "")
         {
             // Disable AP connection if currently available.
             WiFi.softAPdisconnect(true);
             // Set WiFi mode to station mode.
             WiFi.mode(WIFI_STA);
-            WiFi.begin(Settings.wifiSsid, Settings.wifiPassword);
+            WiFi.begin(settings.wifiSsid, settings.wifiPassword);
             // While WiFi status is not connected
             while (WiFi.status() != WL_CONNECTED)
             {
@@ -347,27 +352,30 @@ void doWiFi(void *parameter)
                 switch (WiFi.status())
                 {
                 case 0:
-                    menuArray[0][1] = "IP: Network Init";
+                    wifi.setStatus("IP: Network Init    ");
                     break;
                 case 1:
-                    menuArray[0][1] = "IP: No SSID Avail";
+                    wifi.setStatus("IP: No SSID Avail   ");
                     break;
                 case 4:
-                    menuArray[0][1] = "IP: Network Failed";
+                    wifi.setStatus("IP: Network Failed  ");
                     break;
                 case 5:
-                    menuArray[0][1] = "IP: Connection Lost";
+                    wifi.setStatus("IP: Connection Lost ");
                     break;
                 case 6:
-                    menuArray[0][1] = "IP: Disconnected";
+                    wifi.setStatus("IP: Disconnected    ");
                     break;
                 }
                 // Delay for 500ms between connection attempts.
                 vTaskDelay(500);
             }
             // Connected - amend menuArray with the current IP address.
-            menuArray[0][1] = "IP: " + String(WiFi.localIP().toString().c_str());
-            webServer();
+            // menuArray[0][1] = "IP: " + String(WiFi.localIP().toString().c_str());
+            wifi.setStatus("IP: " + String(WiFi.localIP().toString().c_str()));
+            // Assign currWebPage pointer to webserver index page.
+            currWebPage = webserver_index;
+            // Initialise webServer.
             // Set RTC from ntp pool.
             setRTC();
             // As a connection has been established, delete the associated task.
@@ -376,84 +384,74 @@ void doWiFi(void *parameter)
         else
         {
             // Settings SSID is blank and thus, no useable credentials exist.
-            menuArray[0][1] = "IP: SSID Not Set";
+            // menuArray[0][1] = "IP: SSID Not Set";
         }
     }
 }
 
 void webServer()
 {
-    if (WiFi.status() != WL_DISCONNECTED)
-    {
-        server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { request->send_P(200, "text/html", webserver_index, processor); });
-        server.onNotFound(notFound);
-        server.begin();
+    web_server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+                  { request->send_P(200, "text/html", currWebPage, processor); });
+
+    // GET request
+    web_server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
+                  {
+    //Get "submitted" param letting us know that the form has been submitted.
+    if(request->hasParam("submitted")){
+        //Assign values to settings struct.
+        settings.wifiSsid = request->getParam("wifiSSID")->value();
+        settings.wifiPassword = request->getParam("wifiPassword")->value();
+        settings.deviceOneName = request->getParam("deviceOne")->value();
+        settings.deviceTwoName = request->getParam("deviceTwo")->value();
+        settings.deviceThreeName = request->getParam("deviceThree")->value();
+        settings.deviceFourName = request->getParam("deviceFour")->value();
+        settings.deviceFiveName = request->getParam("deviceFive")->value();
+        settings.deviceSixName = request->getParam("deviceSix")->value();
+        settings.deviceSevenName = request->getParam("deviceSeven")->value();
+        settings.deviceEightName = request->getParam("deviceEight")->value();
+        settings.lightGPIO = request->getParam("lighting")->value().toInt();
+        settings.heatingGPIO = request->getParam("heating")->value().toInt();
+        settings.coolingGPIO = request->getParam("cooling")->value().toInt();
+        settings.atoGPIO = request->getParam("ato")->value().toInt();
     }
+    //Let user know that the settings have been saved, start a new WiFi connect task to connect to new credentials.
+    //Return to init screen.
+        request->send(200, "text/html", "<center>Settings Saved! <br />Returning to main screen.</center>"); 
+                menu.setCurrentMenu(menuInit); 
+                currWebPage = webserver_index;
+                delay(200);
+                createWifiTask();
+                eepromWrite = true; });
+
+    web_server.onNotFound(notFound);
+    web_server.begin();
 }
 
-void setWifi()
+void settingsConfig()
 {
-    selectableMenu = false;
-
+    menu.menuSelectable(false);
     // Back button has been pressed, reconnect WiFi using the previously existing credentials (if any)
     // as we previously disconnected WiFi once this menu page was accessed.
     if (buttonBack == LOW)
     {
         createWifiTask();
     }
-
     // WiFi mode is set to Access Point, create webserver.
     if (WiFi.getMode() == WIFI_MODE_AP)
     {
-        // Set menu to display connection details.
-        menuArray[8][0] = "Connect to SSID:";
-        menuArray[8][1] = "AquariumController";
-        menuArray[8][2] = "Navigate to: ";
-        menuArray[8][3] = String(WiFi.softAPIP().toString().c_str());
-        // Push settings webpage to client.
-        server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { request->send_P(200, "text/html", settings_index_html, processor); });
-        // GET request
-        server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
-                  {
-    //Get "submitted" param letting us know that the form has been submitted.
-    if(request->hasParam("submitted")){
-        Serial.println(request->getParam("wifiSSID")->value());
-        Serial.println(request->getParam("wifiPassword")->value());
-        Serial.println(request->getParam("deviceOne")->value());
-        //Assign values to settings struct.
-        Settings.wifiSsid = request->getParam("wifiSSID")->value();
-        Settings.wifiPassword = request->getParam("wifiPassword")->value();
-        Settings.deviceOneName = request->getParam("deviceOne")->value();
-        Settings.deviceTwoName = request->getParam("deviceTwo")->value();
-        Settings.deviceThreeName = request->getParam("deviceThree")->value();
-        Settings.deviceFourName = request->getParam("deviceFour")->value();
-        Settings.deviceFiveName = request->getParam("deviceFive")->value();
-        Settings.deviceSixName = request->getParam("deviceSix")->value();
-        Settings.deviceSevenName = request->getParam("deviceSeven")->value();
-        Settings.deviceEightName = request->getParam("deviceEight")->value();
-        Settings.lightGPIO = request->getParam("lighting")->value().toInt();
-        Settings.heatingGPIO = request->getParam("heating")->value().toInt();
-        Settings.coolingGPIO = request->getParam("cooling")->value().toInt();
-        Settings.atoGPIO = request->getParam("ato")->value().toInt();
-    }
-    //Let user know that the settings have been saved, start a new WiFi connect task to connect to new credentials.
-    //Return to init screen.
-        request->send(200, "text/html", "<center>Settings Saved! <br />Returning to main screen.</center>"); 
-                createWifiTask();
-                delay(200);
-                eepromWrite = true;
-        currentMenu = 0; });
-
-        server.onNotFound(notFound);
-        server.begin();
+        wifi.setStatus(WiFi.softAPIP().toString().c_str());
+        menu.setMenu(0, menuLineOne, "Connect to SSID:    ");
+        menu.setMenu(0, menuLineTwo, "AquariumController  ");
+        menu.setMenu(0, menuLineThree, "Navigate to:      ");
+        menu.setMenu(0, menuLineFour, wifi.getCurrentStatus());
     }
     else
     {
-        // WiFi mode is not in AP, set to AP with the SSID "AquariumController".
+        // WiFi mode is not in AP, set to AP with the SSID "AquariumController" and assign webpage pointer to settings page.
         WiFi.disconnect();
         WiFi.mode(WIFI_AP);
         WiFi.softAP("AquariumController");
+        currWebPage = settings_index_html;
     }
 }

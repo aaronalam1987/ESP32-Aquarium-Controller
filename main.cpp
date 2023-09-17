@@ -1,35 +1,26 @@
 #include <LiquidCrystal_I2C.h>
 #include <WiFi.h>
+#include <map>
 #include "global.h"
 
-LiquidCrystal_I2C lcd(0x27, 20, 4);
-// Task handler for temperature probe monitoring and WiFi connection.
+Menus menu;
+Settings settings;
+extern TempMonitor tempMonitor;
+extern WIFI wifi;
 
+int statusArray[8][2]{{1}};
+// Task handler for temperature probe monitoring and WiFi connection.
 TaskHandle_t doWifi;
 TaskHandle_t monitorTemp;
 
 // Initialise global ints used to keep track of menus and to assign buttons.
-int currentMenu = 0;
-int previousMenu = 0;
-int menuChanged = 0;
-int menuSelect = 0;
-int buttonUp = 0;
-int buttonDown = 0;
-int buttonBack = 0;
-int buttonOK = 0;
+int currentMenu{0}, previousMenu{0}, menuChanged{0}, menuSelect{0}, buttonUp{0}, buttonDown{0}, buttonBack{0}, buttonOK{0};
 
+// tempLog is used to store hourly temperature values, used for both 24hr and 48hr storage.
 double tempLog[2][24] = {{0}};
 
 // Bools used to identify if an alert is present, if waterchange/feed function is enabled, if eeprom should be written and to identify selectable menus.
-bool alert = false;
-bool waterChange = false;
-bool eepromWrite = false;
-bool selectableMenu;
-
-String selectIndicator = "";
-
-// Settings struct.
-settings Settings;
+bool alert = false, waterChange = false, eepromWrite = false;
 
 // Assigned equipment using connectedEquipment struct.
 connectedEquipment
@@ -52,120 +43,86 @@ String currentStatus(int status)
   return currStatus;
 }
 
-String menuArray[11][4] = {
-    // Init Menu.
-    {"Temp:Waiting...", "IP: No Connection", "Alerts:None", "Time: Not Set"},
-    // Options Page One.
-    {"Equipment Control", "Temperature Control", "Start Water Change", "Set Light Timer"},
-    // Options One Elements start.
-    {"", "", "", ""},
-    {"Target Temp: " + String(Settings.targetTemp), "Variance: " + String(Settings.tempVariant), "Alert: " + String(Settings.tempAlert), "               Save"},
-    {"Ok to enable/disable", "", "", ""},
-    {"Light On : " + String(Settings.lightOn), "Light Off: " + String(Settings.lightOff), "Cycle with OK", "Select to set"},
-    // Options One Elements End.
-    // Options Page Two.
-    {"Equipment Settings", "WiFi Settings", "Web Server", ""},
-    // Options Two Elements Start.
-    {"Equipment Settings", "Equipment Settings", "Equipment Settings", "Equipment Settings"},
-    {"", "", "", ""},
-    {"", "", "", ""},
-    {"Web Server: ", "Enabled", "", ""}
-    // Options Two Elements End.
-};
-
 void initMenu()
 {
   // Menu used to display current temperature, heating/cooling mode, local IP and alerts (if any).
-  selectableMenu = false;
+  menu.setMenu(0, 0, "Temp:" + String(tempMonitor.getCurrentTemp()) + " Mode:" + tempMonitor.getCurrentMode());
+  menu.setMenu(0, 1, wifi.getCurrentStatus());
+  menu.setMenu(0, 2, "Alerts: None        ");
+  menu.setMenu(0, 3, "Time: Not Set       ");
+  menu.menuSelectable(false);
+
   // OK press sets current menu to options menu.
   if (buttonOK == LOW)
   {
-    currentMenu = 1;
+    menu.setCurrentMenu(menuOptions);
   }
 }
 
 void equipmentControl()
 {
-  // This function alternates specified relay on or off.
-  selectableMenu = true;
-  if (buttonOK == LOW)
-  {
-    switch (menuSelect)
-    {
-    case 0:
-      deviceOne.status == 0 ? deviceOne.status = 1 : deviceOne.status = 0;
-      menuArray[2][0] = deviceOne.name + currentStatus(deviceOne.status);
-      digitalWrite(deviceOne.pin, deviceOne.status);
-      break;
-    case 1:
-      deviceTwo.status == 0 ? deviceTwo.status = 1 : deviceTwo.status = 0;
-      menuArray[2][1] = deviceTwo.name + currentStatus(deviceTwo.status);
-      digitalWrite(deviceTwo.pin, deviceTwo.status);
-      break;
-    case 2:
-      deviceThree.status == 0 ? deviceThree.status = 1 : deviceThree.status = 0;
-      menuArray[2][2] = deviceThree.name + currentStatus(deviceThree.status);
-      digitalWrite(deviceThree.pin, deviceThree.status);
-      break;
-    case 3:
-      deviceFour.status == 0 ? deviceFour.status = 1 : deviceFour.status = 0;
-      menuArray[2][3] = deviceFour.name + currentStatus(deviceFour.status);
-      digitalWrite(deviceFour.pin, deviceFour.status);
-      break;
-    }
-  }
-}
+  // Map the currently selected menu line to the associated GPIO.
+  std::map<int, int> gpioMap;
+  gpioMap[menuLineOne] = 27;
+  gpioMap[menuLineTwo] = 26;
+  gpioMap[menuLineThree] = 25;
+  gpioMap[menuLineFour] = 33;
 
-void startWaterChange()
-{
-  // Waterchange is designed to disable all but specified devices and this function simply updates the array with the status and sets the bool to true or false.
-  selectableMenu = false;
-  if (waterChange)
-  {
-    menuArray[4][2] = "Status: Enabled ";
-  }
-  else
-  {
-    menuArray[4][2] = "Status: Disabled";
-  }
+  // statusArray allows us to associate a value to each gpio pin allowing us to know if the device is off (0) or on (1)
+  statusArray[0][0] = gpioMap[menuLineOne];
+  statusArray[1][0] = gpioMap[menuLineTwo];
+  statusArray[2][0] = gpioMap[menuLineThree];
+  statusArray[3][0] = gpioMap[menuLineFour];
+
+  // Clear and build menu.
+  menu.clearMenu();
+  menu.setMenu(0, 0, deviceOne.name + currentStatus(statusArray[0][1]));
+  menu.setMenu(0, 1, deviceTwo.name + currentStatus(statusArray[1][1]));
+  menu.setMenu(0, 2, deviceThree.name + currentStatus(statusArray[2][1]));
+  menu.setMenu(0, 3, deviceFour.name + currentStatus(statusArray[3][1]));
+  menu.menuSelectable(true);
+
   if (buttonOK == LOW)
   {
-    waterChange == true ? waterChange = false : waterChange = true;
+    for (int i = 0; i < 8; i++)
+    {
+      // This allows us to alternate specified relay on or off.
+      if (statusArray[i][0] == gpioMap[menu.getMenuSelect()])
+      {
+        if (statusArray[i][1] == 0)
+        {
+          statusArray[i][1] = 1;
+        }
+        else
+        {
+          statusArray[i][1] = 0;
+        }
+        digitalWrite(gpioMap[menu.getMenuSelect()], statusArray[i][1]);
+      }
+    }
   }
 }
 
 void setLightTimer()
 {
   // Todo
-  selectableMenu = false;
-}
-
-void clearLine(int line)
-{
-  lcd.setCursor(0, line);
-  lcd.print("                    ");
+  menu.menuSelectable(false);
 }
 
 void setup()
 {
+
   // Read config file and assign values to settings struct.
-  readEeprom();
-
+  settings.loadSettings();
   // Assign values to device struct objects.
-  deviceOne = {Settings.deviceOneName, 1, 27},
-  deviceTwo = {Settings.deviceTwoName, 1, 26},
-  deviceThree = {Settings.deviceThreeName, 1, 25},
-  deviceFour = {Settings.deviceFourName, 1, 33},
-  deviceFive = {Settings.deviceFiveName, 1, 32},
-  deviceSix = {Settings.deviceSixName, 1, 17},
-  deviceSeven = {Settings.deviceSevenName, 1, 18},
-  deviceEight = {Settings.deviceEightName, 1, 19};
-
-  // Amend array with device names and status.
-  menuArray[2][0] = deviceOne.name + currentStatus(deviceOne.status);
-  menuArray[2][1] = deviceTwo.name + currentStatus(deviceTwo.status);
-  menuArray[2][2] = deviceThree.name + currentStatus(deviceThree.status);
-  menuArray[2][3] = deviceFour.name + currentStatus(deviceFour.status);
+  deviceOne = {settings.deviceOneName, 1, 27},
+  deviceTwo = {settings.deviceTwoName, 1, 26},
+  deviceThree = {settings.deviceThreeName, 1, 25},
+  deviceFour = {settings.deviceFourName, 1, 33},
+  deviceFive = {settings.deviceFiveName, 1, 32},
+  deviceSix = {settings.deviceSixName, 1, 17},
+  deviceSeven = {settings.deviceSevenName, 1, 18},
+  deviceEight = {settings.deviceEightName, 1, 19};
 
   // Assign "monitorTemp" function to seperate task to remove UI delay from probing.
   xTaskCreate(
@@ -187,9 +144,7 @@ void setup()
   // Only used for debugging.
   Serial.begin(9600);
   // Initilise LCD.
-  lcd.init();
-  lcd.clear();
-  lcd.backlight();
+  menu.lcdInit();
   // Assign the up, down, back and OK buttons.
   pinMode(34, INPUT);
   pinMode(35, INPUT);
@@ -206,61 +161,41 @@ void setup()
   pinMode(deviceEight.pin, OUTPUT);
 
   // Set all relays to initial state (relay is off, device connected via N/C);
-  digitalWrite(deviceOne.pin, 1);
-  digitalWrite(deviceTwo.pin, 1);
-  digitalWrite(deviceThree.pin, 1);
-  digitalWrite(deviceFour.pin, 1);
-  digitalWrite(deviceFive.pin, 1);
-  digitalWrite(deviceSix.pin, 1);
-  digitalWrite(deviceSeven.pin, 1);
-  digitalWrite(deviceEight.pin, 1);
+  digitalWrite(deviceOne.pin, gpioON);
+  digitalWrite(deviceTwo.pin, gpioON);
+  digitalWrite(deviceThree.pin, gpioON);
+  digitalWrite(deviceFour.pin, gpioON);
+  digitalWrite(deviceFive.pin, gpioON);
+  digitalWrite(deviceSix.pin, gpioON);
+  digitalWrite(deviceSeven.pin, gpioON);
+  digitalWrite(deviceEight.pin, gpioON);
+
+  // Initialise Async webserver.
+  webServer();
 }
 
 void loop()
 {
-  Serial.println(currentTemp);
   buttonUp = digitalRead(34);
   buttonDown = digitalRead(35);
   buttonBack = digitalRead(36);
   buttonOK = digitalRead(39);
 
-  writeEeprom();
+  // Array of function pointers.
+  // Use a map to link the currentMenu int to the associated function pages.
+  std::map<int, std::function<void()>> menuActions;
+  menuActions[0] = initMenu;
+  menuActions[1] = optionsMenu;
+  menuActions[2] = equipmentControl;
+  menuActions[3] = tempControl;
+  menuActions[4] = lightControl;
+  menuActions[5] = settingsConfig;
 
-  if (alert)
-  {
-    tone(12, 500, 500);
-    alert = false;
-  }
+  // Use currentMenu to navigate to associated function page.
+  menuActions[menu.getCurrentMenu()]();
 
-  switch (currentMenu)
-  {
-  case 0:
-    initMenu();
-    break;
-  case 1:
-    optionsMenu();
-    break;
-  case 2:
-    equipmentControl();
-    break;
-  case 3:
-    tempControl();
-    break;
-  case 4:
-    startWaterChange();
-    break;
-  case 5:
-    setLightTimer();
-    break;
-  case 6:
-    optionsMenuMore();
-    break;
-  case 8:
-    setWifi();
-    break;
-  }
   timeMonitor();
   inputMonitor();
-  drawMenu();
+  menu.drawMenu();
   delay(100);
 }

@@ -1,72 +1,65 @@
 #include "global.h"
-#include <OneWire.h>
-#include <DallasTemperature.h>
+
+extern Settings settings;
+extern Menus menu;
 OneWire oneWire(23);
 DallasTemperature tempSensor(&oneWire);
-extern struct settings Settings;
-double currentTemp;
-String mode;
 
+TempMonitor tempMonitor(&oneWire, &tempSensor);
 void monitorTempFunction(void *parameter)
 {
-    // Start tempSensor, initilised by DallasTemperature library.
-    tempSensor.begin();
+    // Initialise temperature probe.
+    tempMonitor.initialise();
     for (;;)
     {
-        // Get current temperature from probe and assign to double.
-        tempSensor.requestTemperatures();
-        currentTemp = tempSensor.getTempCByIndex(0);
-
+        tempMonitor.checkCurrentTemp();
         // Convert to string and assign currentTemp value to the menuArray
-        menuArray[0][0] = "Temp:" + String(currentTemp).substring(0, 4) + " Mode: " + mode;
 
         // Check to see if temperature is higher than the variant allows for.
         // If so, disable heating relay and enable cooling.
-        if (currentTemp - Settings.targetTemp >= Settings.tempVariant)
+        if (tempMonitor.getCurrentTemp() - settings.targetTemp >= settings.tempVariant)
         {
-            // Serial.println("disable heat, enable cool");
             // If currentMenu is set to 2, we don't want to act as this menu allows control over connected equipment.
             // Automatic control will resume once this menu is not active.
-            if (currentMenu != 2)
+            if (menu.getCurrentMenu() != equipmentMenu)
             {
-                digitalWrite(Settings.heatingGPIO, 0);
-                digitalWrite(Settings.coolingGPIO, 1);
-                mode = "Cool";
+                digitalWrite(settings.heatingGPIO, gpioOFF);
+                digitalWrite(settings.coolingGPIO, gpioON);
+                tempMonitor.setMode("Cool");
             }
         }
 
         // Check to see if temperature is lower than the variant allows for.
         // If so, disable cooling relay and enable heating.
-        else if (Settings.targetTemp - currentTemp >= Settings.tempVariant)
+        else if (settings.targetTemp - tempMonitor.getCurrentTemp() >= settings.tempVariant)
         {
-            // Serial.println("enable heat, disable cool");
-            if (currentMenu != 2)
+            if (menu.getCurrentMenu() != equipmentMenu)
             {
-                digitalWrite(Settings.heatingGPIO, 1);
-                digitalWrite(Settings.coolingGPIO, 0);
-                mode = "Heat";
+                digitalWrite(settings.heatingGPIO, gpioON);
+                digitalWrite(settings.coolingGPIO, gpioOFF);
+                tempMonitor.setMode("Heat");
             }
         }
         // Temperature is in range of variant, disable heating and cooling and set mode to "Off".
         else
         {
-            if (currentMenu != 2)
+            if (menu.getCurrentMenu() != equipmentMenu)
             {
-                digitalWrite(Settings.heatingGPIO, 0);
-                digitalWrite(Settings.coolingGPIO, 0);
-                mode = "Off ";
+                digitalWrite(settings.heatingGPIO, gpioOFF);
+                digitalWrite(settings.coolingGPIO, gpioOFF);
+                tempMonitor.setMode("Off");
             }
         }
 
         // Check temperature compared to alert range, assign appropriate alerts if needed.
-        if (currentTemp - Settings.targetTemp >= Settings.tempAlert || Settings.targetTemp - currentTemp >= Settings.tempAlert)
+        if (tempMonitor.getCurrentTemp() - settings.targetTemp >= settings.tempAlert || settings.targetTemp - tempMonitor.getCurrentTemp() >= settings.tempAlert)
         {
-            menuArray[0][2] = "Alerts:Temp Warning!";
+            // menuArray[0][2] = "Alerts:Temp Warning!";
             alert = true;
         }
         else
         {
-            menuArray[0][2] = "Alerts:None         ";
+            // menuArray[0][2] = "Alerts:None         ";
             alert = false;
         }
         vTaskDelay(5000 / portTICK_RATE_MS);
