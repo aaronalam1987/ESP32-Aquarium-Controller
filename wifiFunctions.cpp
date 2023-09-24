@@ -1,17 +1,17 @@
 #include "global.h"
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
+#include "tempMonitor.h"
+#include "settings.h"
+#include "wifiFunctions.h"
+#include "menuControl.h"
+
+WIFI wifi;
 
 AsyncWebServer web_server(80);
-WIFI wifi;
 extern TempMonitor tempMonitor;
 extern Menus menu;
 extern Settings settings;
 extern System sys;
 extern TaskHandle_t doWifi;
-extern struct connectedEquipment deviceOne,
-    deviceTwo, deviceThree, deviceFour, deviceFive, deviceSix, deviceSeven, deviceEight;
 const char *currWebPage{0};
 
 void createWifiTask()
@@ -440,7 +440,7 @@ void settingsConfig()
     menu.menuSelectable(false);
     // Back button has been pressed, reconnect WiFi using the previously existing credentials (if any)
     // as we previously disconnected WiFi once this menu page was accessed.
-    if (buttonBack == LOW)
+    if (sys.buttonBack == LOW)
     {
         createWifiTask();
     }

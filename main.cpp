@@ -1,9 +1,11 @@
-#include <LiquidCrystal_I2C.h>
-#include <WiFi.h>
 #include <map>
 #include "global.h"
+#include "tempMonitor.h"
+#include "settings.h"
+#include "wifiFunctions.h"
+#include "menuControl.h"
 
-Menus menu;
+extern Menus menu;
 Settings settings;
 extern TempMonitor tempMonitor;
 extern WIFI wifi;
@@ -12,14 +14,6 @@ System sys;
 // Task handler for temperature probe monitoring and WiFi connection.
 TaskHandle_t doWifi;
 TaskHandle_t monitorTemp;
-
-// Initialise global ints used to keep track of menus and to assign buttons.
-int buttonUp{0}, buttonDown{0}, buttonBack{0}, buttonOK{0};
-
-// tempLog is used to store hourly temperature values, used for both 24hr and 48hr storage.
-// double tempLog[2][24] = {{0}};
-
-// Bools used to identify if an alert is present, if waterchange/feed function is enabled, if eeprom should be written and to identify selectable menus.
 
 void initMenu()
 {
@@ -37,7 +31,7 @@ void initMenu()
   menu.menuSelectable(false);
 
   // OK press sets current menu to options menu.
-  if (buttonOK == LOW)
+  if (sys.buttonOK == LOW)
   {
     menu.setCurrentMenu(menuOptions);
   }
@@ -106,10 +100,10 @@ void setup()
 
 void loop()
 {
-  buttonUp = digitalRead(34);
-  buttonDown = digitalRead(35);
-  buttonBack = digitalRead(36);
-  buttonOK = digitalRead(39);
+  sys.buttonUp = digitalRead(34);
+  sys.buttonDown = digitalRead(35);
+  sys.buttonBack = digitalRead(36);
+  sys.buttonOK = digitalRead(39);
 
   // Array of function pointers.
   // Use a map to link the currentMenu int to the associated function pages.

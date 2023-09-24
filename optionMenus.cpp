@@ -1,6 +1,8 @@
 #include "global.h"
+#include "menuControl.h"
 #include <map>
 extern Menus menu;
+extern System sys;
 
 void optionsMenu()
 {
@@ -21,7 +23,7 @@ void optionsMenu()
     optionsMap[3] = 5; // Settings (via WiFi).
 
     // buttonOK has been pressed, set our currentMenu using the associated value from the optionsMap.
-    if (buttonOK == LOW)
+    if (sys.buttonOK == LOW)
     {
         menu.clearMenu();
         menu.setCurrentMenu(optionsMap[menu.getMenuSelect()]);

@@ -1,4 +1,6 @@
 #include "global.h"
+#include "settings.h"
+#include "menuControl.h"
 #include <map>
 
 extern Settings settings;
@@ -28,7 +30,7 @@ void equipmentControl()
     menu.setMenu(0, menuLineFour, settings.deviceFourName + sys.getEquipmentStatus(menuLineFour));
     menu.menuSelectable(true);
 
-    if (buttonOK == LOW)
+    if (sys.buttonOK == LOW)
     {
         for (int i = 0; i < 4; i++)
         {

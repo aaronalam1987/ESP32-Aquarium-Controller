@@ -1,12 +1,15 @@
 #include "global.h"
+#include "settings.h"
+#include "menuControl.h"
 extern Settings settings;
+extern System sys;
 extern Menus menu;
 
 void lightControl()
 {
     menu.menuSelectable(true);
     // OK button and either UP or DOWN button increments and decrements the value specified.
-    if (buttonOK == LOW && buttonUp == LOW)
+    if (sys.buttonOK == LOW && sys.buttonUp == LOW)
     {
         switch (menu.getMenuSelect())
         {
@@ -19,7 +22,7 @@ void lightControl()
         }
     }
 
-    if (buttonOK == LOW && buttonDown == LOW)
+    if (sys.buttonOK == LOW && sys.buttonDown == LOW)
     {
         switch (menu.getMenuSelect())
         {
@@ -32,7 +35,7 @@ void lightControl()
         }
     }
 
-    if (buttonOK == LOW && menu.getMenuSelect() == 3)
+    if (sys.buttonOK == LOW && menu.getMenuSelect() == 3)
     {
         // OK press on menuSelect 3 is "save".
         menu.setCurrentMenu(0);

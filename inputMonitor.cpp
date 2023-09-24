@@ -1,11 +1,13 @@
 #include "global.h"
-extern TaskHandle_t doWifi;
+#include "menuControl.h"
+
+extern System sys;
 extern Menus menu;
 void inputMonitor()
 {
     // inputMonitor increments or decrements the currently selected menu line.
     //  buttonUp press without buttonOK press, if we don't check that buttonOK is not pressed, we lose the ability to increment specific elements on menu pages.
-    if (buttonDown == LOW && buttonOK != LOW)
+    if (sys.buttonDown == LOW && sys.buttonOK != LOW)
     {
         if (menu.getMenuSelect() <= menuLineFour)
         {
@@ -13,7 +15,7 @@ void inputMonitor()
         }
     }
 
-    if (buttonUp == LOW && buttonOK != LOW)
+    if (sys.buttonUp == LOW && sys.buttonOK != LOW)
     {
         if (menu.getMenuSelect() > menuLineOne)
         {
@@ -21,7 +23,7 @@ void inputMonitor()
         }
     }
 
-    if (buttonBack == LOW)
+    if (sys.buttonBack == LOW)
     {
         menu.setCurrentMenu(menuInit);
     }

@@ -1,4 +1,7 @@
 #include "global.h"
+#include "tempMonitor.h"
+#include "settings.h"
+#include "menuControl.h"
 
 extern Settings settings;
 extern Menus menu;

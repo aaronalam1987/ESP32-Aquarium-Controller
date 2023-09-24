@@ -1,6 +1,9 @@
 #include "global.h"
+#include "settings.h"
+#include "menuControl.h"
 extern Settings settings;
 extern Menus menu;
+extern System sys;
 void tempControl()
 {
   menu.menuSelectable(true);
@@ -9,7 +12,7 @@ void tempControl()
   menu.setMenu(0, menuLineThree, "Temp Alert: " + String(settings.tempAlert));
   menu.setMenu(0, menuLineFour, "Save                ");
   // OK button and either UP or DOWN button increments and decrements the value specified.
-  if (buttonOK == LOW && buttonUp == LOW)
+  if (sys.buttonOK == LOW && sys.buttonUp == LOW)
   {
     switch (menu.getMenuSelect())
     {
@@ -25,7 +28,7 @@ void tempControl()
     }
   }
 
-  if (buttonOK == LOW && buttonDown == LOW)
+  if (sys.buttonOK == LOW && sys.buttonDown == LOW)
   {
     switch (menu.getMenuSelect())
     {
@@ -41,7 +44,7 @@ void tempControl()
     }
   }
 
-  if (buttonOK == LOW && menu.getMenuSelect() == menuLineFour)
+  if (sys.buttonOK == LOW && menu.getMenuSelect() == menuLineFour)
   {
     // OK press on menuLineFour is "save".
     menu.setCurrentMenu(menuInit);
