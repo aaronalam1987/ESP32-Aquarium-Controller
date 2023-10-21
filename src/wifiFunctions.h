@@ -21,8 +21,9 @@ public:
     {
         return wifiStatus;
     }
-};
 
-void settingsConfig();
+    void webServer();
+    void settingsConfig();
+};
 
 #endif

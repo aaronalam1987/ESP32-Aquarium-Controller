@@ -60,14 +60,7 @@ public:
 
     String getEquipmentStatus(int col)
     {
-        if (statusArray[col][1] == 1)
-        {
-            return String(" - On ");
-        }
-        else
-        {
-            return String(" - Off");
-        }
+        return (statusArray[col][1] == 1) ? " - On " : " - Off ";
     }
 };
 
@@ -78,7 +71,7 @@ void tempControl();
 void equipmentControl();
 
 void doWiFi(void *parameter);
-void webServer();
+
 void optionsMenu();
 void menuChange();
 

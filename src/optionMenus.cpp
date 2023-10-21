@@ -6,12 +6,15 @@ extern System sys;
 
 void optionsMenu()
 {
+    // Clear menu.
     menu.clearMenu();
-    // Set our menu.
-    menu.setMenu(0, menuLineOne, "Equipment Control   ");
-    menu.setMenu(0, menuLineTwo, "Temperature Control ");
+
+    // Build our menu.
+    menu.setMenu(0, menuLineOne, "Equipment Control ");
+    menu.setMenu(0, menuLineTwo, "Temperature Control");
     menu.setMenu(0, menuLineThree, "Light Timer Settings");
-    menu.setMenu(0, menuLineFour, "Settings (via WiFi) ");
+    menu.setMenu(0, menuLineFour, "Settings (via WiFi)");
+
     // Is selectable.
     menu.menuSelectable(true);
 

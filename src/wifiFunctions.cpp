@@ -3,15 +3,18 @@
 #include "settings.h"
 #include "wifiFunctions.h"
 #include "menuControl.h"
-
 WIFI wifi;
 
 AsyncWebServer web_server(80);
+// wifiFunctions requires access to most of the previously declared class instances to provide the functionality for configuring settings through a webpage.
+// Web access also provides current equipment status (on/off) as well as a temperature graph for the current 24 hours and previous 24 hours, providing an average 24 hour reading.
 extern TempMonitor tempMonitor;
 extern Menus menu;
 extern Settings settings;
 extern System sys;
 extern TaskHandle_t doWifi;
+
+// Pointer to our currently selected web page, this changes based on current mode (Network server / AP server).
 const char *currWebPage{0};
 
 void createWifiTask()
@@ -30,6 +33,8 @@ void notFound(AsyncWebServerRequest *request)
     request->send(404, "text/plain", "Not found");
 }
 
+// This is our settings index html code and is presented when the WiFi mode is set to AP (access point).
+// It provides the functionality for configuring settings such as wifi SSID and password as well as device naming and GPIO configuration.
 const char settings_index_html[] PROGMEM = R"(
 <!DOCTYPE HTML>
 <html>
@@ -134,6 +139,7 @@ const char settings_index_html[] PROGMEM = R"(
 </body>
 </html>)";
 
+// This page is the controller homepage and provides the current status of equipment, current temperature and 24/48 hour temperature graphs.
 const char webserver_index[] PROGMEM = R"(
 <!DOCTYPE HTML>
 <html>
@@ -224,22 +230,7 @@ const char webserver_index[] PROGMEM = R"(
 
 </html>)";
 
-String status(int status)
-{
-    // Converts the status int into a readable string, to be used in menus.
-    // 1 represents the relay being "off" as connected devices are connected via "normally closed" to be safe in the event of some sort of system failure.
-    String currStatus = "";
-    if (status == 0)
-    {
-        currStatus = " Off";
-    }
-    else
-    {
-        currStatus = " On ";
-    }
-    return currStatus;
-}
-
+// This long stretch replaces the placeholders in our raw literal html pages with variable values.
 String processor(const String &var)
 {
     if (var == "WIFISSID")
@@ -284,7 +275,7 @@ String processor(const String &var)
     }
     else if (var == "EQUIPMENTSTATUS")
     {
-        return String(settings.deviceOneName + "<br />" + settings.deviceTwoName + "<br />" + settings.deviceThreeName + "<br />" + settings.deviceFourName + "<br />" + settings.deviceFiveName + "<br />" + settings.deviceSixName + "<br />" + settings.deviceSevenName + "<br />" + settings.deviceEightName + "<br />");
+        return String(settings.deviceOneName + sys.getEquipmentStatus(0) + "<br />" + settings.deviceTwoName + sys.getEquipmentStatus(1) + "<br />" + settings.deviceThreeName + sys.getEquipmentStatus(2) + "<br />" + settings.deviceFourName + sys.getEquipmentStatus(3) + "<br />" + settings.deviceFiveName + sys.getEquipmentStatus(4) + "<br />" + settings.deviceSixName + sys.getEquipmentStatus(5) + "<br />" + settings.deviceSevenName + sys.getEquipmentStatus(6) + "<br />" + settings.deviceEightName + sys.getEquipmentStatus(7) + "<br />");
     }
     else if (var == "CURRENTTEMP")
     {
@@ -298,12 +289,10 @@ String processor(const String &var)
             if (i < 23)
             {
                 tempChart += String(tempMonitor.getTempLog(0, i)) + ",";
-                // tempChart += String(tempLog[0][i]) + ",";
             }
             else
             {
                 tempChart += String(tempMonitor.getTempLog(0, i));
-                // tempChart += String(tempLog[0][i]);
             }
         }
         return String(tempChart);
@@ -316,12 +305,10 @@ String processor(const String &var)
             if (i < 23)
             {
                 tempChart += String(tempMonitor.getTempLog(1, i)) + ",";
-                // tempChart += String(tempLog[1][i]) + ",";
             }
             else
             {
                 tempChart += String(tempMonitor.getTempLog(1, i));
-                // tempChart += String(tempLog[1][i]);
             }
         }
         return String(tempChart);
@@ -332,7 +319,6 @@ String processor(const String &var)
         for (int i = 0; i < 24; i++)
         {
             avgTemp += tempMonitor.getTempLog(1, i);
-            // avgTemp += tempLog[1][i];
         }
         double avg = avgTemp / 24;
         return String(avg);
@@ -340,6 +326,7 @@ String processor(const String &var)
     return String();
 }
 
+// doWiFI is responsible for connecting to the provided wifi network, once connected it updates the current time and provides network access to the homepage.
 void doWiFi(void *parameter)
 {
     for (;;)
@@ -350,6 +337,7 @@ void doWiFi(void *parameter)
             WiFi.softAPdisconnect(true);
             // Set WiFi mode to station mode.
             WiFi.mode(WIFI_STA);
+            // Connect to stored wifi credentials.
             WiFi.begin(settings.wifiSsid, settings.wifiPassword);
             // While WiFi status is not connected
             while (WiFi.status() != WL_CONNECTED)
@@ -380,7 +368,6 @@ void doWiFi(void *parameter)
             wifi.setStatus("IP: " + String(WiFi.localIP().toString().c_str()));
             // Assign currWebPage pointer to webserver index page.
             currWebPage = webserver_index;
-            // Initialise webServer.
             // Set RTC from ntp pool.
             setRTC();
             // As a connection has been established, delete the associated task.
@@ -389,13 +376,12 @@ void doWiFi(void *parameter)
         else
         {
             // Settings SSID is blank and thus, no useable credentials exist.
-            // menuArray[0][1] = "IP: SSID Not Set";
             wifi.setStatus("IP: SSID Not Set    ");
         }
     }
 }
 
-void webServer()
+void WIFI::webServer()
 {
     web_server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
                   { request->send_P(200, "text/html", currWebPage, processor); });
@@ -404,9 +390,10 @@ void webServer()
     web_server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
                   {
                       // Get "submitted" param letting us know that the form has been submitted.
+                      // Only the webpage for settings index has the parameter of "submitted".
                       if (request->hasParam("submitted"))
                       {
-                          // Assign values to settings struct.
+                          // Assign values to settings.
                           settings.wifiSsid = request->getParam("wifiSSID")->value();
                           settings.wifiPassword = request->getParam("wifiPassword")->value();
                           settings.deviceOneName = request->getParam("deviceOne")->value();
@@ -426,29 +413,37 @@ void webServer()
                       // Return to init screen.
                       request->send(200, "text/html", "<center>Settings Saved! <br />Returning to main screen.</center>");
                       menu.setCurrentMenu(menuInit);
+                      // Set currWebPage to webserver_index which is the controller homepage.
                       currWebPage = webserver_index;
                       delay(200);
                       createWifiTask();
+                      // We need to save new settings to eeprom.
                       sys.setEepromWrite(true); });
 
     web_server.onNotFound(notFound);
     web_server.begin();
 }
 
-void settingsConfig()
+void WIFI::settingsConfig()
 {
+    // Menu is not selectable.
     menu.menuSelectable(false);
+
     // Back button has been pressed, reconnect WiFi using the previously existing credentials (if any)
     // as we previously disconnected WiFi once this menu page was accessed.
     if (sys.buttonBack == LOW)
     {
         createWifiTask();
     }
+
     // WiFi mode is set to Access Point, create webserver.
     if (WiFi.getMode() == WIFI_MODE_AP)
     {
         wifi.setStatus(WiFi.softAPIP().toString().c_str());
+        // Clear menu.
         menu.clearMenu();
+
+        // Build our menu.
         menu.setMenu(0, menuLineOne, "Connect to SSID:    ");
         menu.setMenu(0, menuLineTwo, "AquariumController  ");
         menu.setMenu(0, menuLineThree, "Navigate to:      ");

@@ -29,7 +29,6 @@ void timeMonitor()
     {
         // We have passed an hour, update double temp log.
         tempMonitor.setTempLog(0, rtc.getHour(true), tempMonitor.getCurrentTemp());
-        // tempLog[0][rtc.getHour(true)] = tempMonitor.getCurrentTemp();
         timeChange = rtc.getHour(true);
     }
     // Day has changed, reset RTC from NTP pool, move current tempLog to previous tempLog location and clear current tempLog.
@@ -38,18 +37,10 @@ void timeMonitor()
         for (int i = 0; i < 24; i++)
         {
             tempMonitor.setTempLog(1, i, tempMonitor.getTempLog(0, i));
-            // tempLog[1][i] = tempLog[0][i];
             tempMonitor.setTempLog(0, i, 0);
-            // tempLog[0][i] = 0;
         }
         tempMonitor.setTempLog(0, 0, tempMonitor.getTempLog(1, 0));
-        // tempLog[0][0] = tempLog[1][0];
         setRTC();
     }
-    else
-    {
-        // set temp array.
-    }
     sys.setCurrentTime(rtc.getTime());
-    // menuArray[0][3] = "Time: " + rtc.getTime();
 }

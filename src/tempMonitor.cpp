@@ -17,8 +17,8 @@ void monitorTempFunction(void *parameter)
     tempMonitor.initialise();
     for (;;)
     {
+        // checkCurrentTemp requests updated temperature and assigns it to currentTemp double.
         tempMonitor.checkCurrentTemp();
-        // Convert to string and assign currentTemp value to the menuArray
 
         // Check to see if temperature is higher than the variant allows for.
         // If so, disable heating relay and enable cooling.

@@ -6,11 +6,18 @@ extern Menus menu;
 extern System sys;
 void tempControl()
 {
-  menu.menuSelectable(true);
+  // Clear menu.
+  menu.clearMenu();
+
+  // Build our menu.
   menu.setMenu(0, menuLineOne, "Target Temp: " + String(settings.targetTemp));
   menu.setMenu(0, menuLineTwo, "Temp Variant: " + String(settings.tempAlert));
   menu.setMenu(0, menuLineThree, "Temp Alert: " + String(settings.tempAlert));
   menu.setMenu(0, menuLineFour, "Save                ");
+
+  // Is selectable.
+  menu.menuSelectable(true);
+
   // OK button and either UP or DOWN button increments and decrements the value specified.
   if (sys.buttonOK == LOW && sys.buttonUp == LOW)
   {

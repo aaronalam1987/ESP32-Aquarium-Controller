@@ -4,12 +4,15 @@
 #include "settings.h"
 #include "wifiFunctions.h"
 #include "menuControl.h"
+#include "espnow.h"
 
 extern Menus menu;
 Settings settings;
 extern TempMonitor tempMonitor;
 extern WIFI wifi;
 System sys;
+
+extern espNow espnow;
 
 // Task handler for temperature probe monitoring and WiFi connection.
 TaskHandle_t doWifi;
@@ -95,7 +98,9 @@ void setup()
   digitalWrite(19, gpioON);
 
   // Initialise Async webserver.
-  webServer();
+  wifi.webServer();
+
+  espnow.espNowInit();
 }
 
 void loop()
@@ -113,7 +118,7 @@ void loop()
   menuActions[2] = equipmentControl;
   menuActions[3] = tempControl;
   menuActions[4] = lightControl;
-  menuActions[5] = settingsConfig;
+  menuActions[5] = std::bind(&WIFI::settingsConfig, &wifi);
 
   // Use currentMenu to navigate to associated function page.
   menuActions[menu.getCurrentMenu()]();
@@ -123,4 +128,6 @@ void loop()
 
   menu.drawMenu();
   delay(100);
+  Serial.println(WiFi.channel());
+  Serial.println(sys.getStatusArray(0, 1));
 }
