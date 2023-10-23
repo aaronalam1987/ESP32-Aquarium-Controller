@@ -13,10 +13,9 @@ public:
     double tempAlert;
     double lightOn;
     double lightOff;
-    int lightGPIO;
-    int heatingGPIO;
-    int coolingGPIO;
-    int atoGPIO;
+    bool enableLightCon;
+    bool enableTempCon;
+    bool enableATO;
     String wifiSsid;
     String wifiPassword;
     String deviceOneName;
@@ -28,7 +27,7 @@ public:
     String deviceSevenName;
     String deviceEightName;
 
-    Settings() : targetTemp{0}, tempVariant{0}, tempAlert{0}, lightOn{0}, lightOff{0}, lightGPIO{0}, heatingGPIO{0}, coolingGPIO{0}, atoGPIO{0}, wifiSsid{""}, wifiPassword{""}, deviceOneName{""}, deviceTwoName{""}, deviceThreeName{""}, deviceFourName{""}, deviceFiveName{""}, deviceSixName{""}, deviceSevenName{""}, deviceEightName{""} {};
+    Settings() : targetTemp{0}, tempVariant{0}, tempAlert{0}, lightOn{0}, lightOff{0}, enableLightCon{false}, enableTempCon{false}, enableATO{false}, wifiSsid{""}, wifiPassword{""}, deviceOneName{""}, deviceTwoName{""}, deviceThreeName{""}, deviceFourName{""}, deviceFiveName{""}, deviceSixName{""}, deviceSevenName{""}, deviceEightName{""} {};
 
     Preferences &getConfig()
     {
@@ -52,10 +51,9 @@ public:
         deviceSixName = config.getString("deviceSixName", "");
         deviceSevenName = config.getString("deviceSevenName", "");
         deviceEightName = config.getString("deviceEightName", "");
-        lightGPIO = config.getInt("lightGPIO", 0);
-        heatingGPIO = config.getInt("heatingGPIO", 0);
-        coolingGPIO = config.getInt("coolingGPIO", 0);
-        atoGPIO = config.getInt("atoGPIO", 0);
+        enableLightCon = config.getBool("enableLightcon", false);
+        enableTempCon = config.getBool("enableTempCon", false);
+        enableATO = config.getBool("enableATO", false);
     }
     void saveSettings()
     {
@@ -74,10 +72,9 @@ public:
         config.putString("deviceSixName", deviceSixName);
         config.putString("deviceSevenName", deviceSevenName);
         config.putString("deviceEightName", deviceEightName);
-        config.putInt("lightGPIO", lightGPIO);
-        config.putInt("heatingGPIO", heatingGPIO);
-        config.putInt("coolingGPIO", coolingGPIO);
-        config.putInt("atoGPIO", atoGPIO);
+        config.putBool("enableLightCon", enableLightCon);
+        config.putBool("enableTempCon", enableTempCon);
+        config.putBool("enableATO", enableATO);
     }
 };
 

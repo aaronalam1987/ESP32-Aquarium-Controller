@@ -3,8 +3,10 @@
 #include "settings.h"
 #include "wifiFunctions.h"
 #include "menuControl.h"
-WIFI wifi;
+#include "espNow.h"
 
+extern espNow espnow;
+WIFI wifi;
 AsyncWebServer web_server(80);
 // wifiFunctions requires access to most of the previously declared class instances to provide the functionality for configuring settings through a webpage.
 // Web access also provides current equipment status (on/off) as well as a temperature graph for the current 24 hours and previous 24 hours, providing an average 24 hour reading.
@@ -75,63 +77,19 @@ const char settings_index_html[] PROGMEM = R"(
                 <b>Equipment Names:</b><br />
 				<i>(Leave blank if not in use)</i><br /><br />
                 Device One:<br /> <input type="text" name="deviceOne" value="%DEVICEONENAME%"><br />
-                Device Two:<br /> <input type="text" name="deviceTwo" value="%DEVICETWONAME%"><br />
-                Device Three:<br /> <input type="text" name="deviceThree" value="%DEVICETHREENAME%"><br />
+                Device Two:<br /> <input type="text" name="deviceTwo" value="%DEVICETWONAME%" ><br />
+                Device Three:<br /> <input type="text" name="deviceThree" value="%DEVICETHREENAME%" ><br />
                 Device Four:<br /> <input type="text" name="deviceFour" value="%DEVICEFOURNAME%"><br />
                 Device Five:<br /> <input type="text" name="deviceFive" value="%DEVICEFIVENAME%"><br />
                 Device Six:<br /> <input type="text" name="deviceSix" value="%DEVICESIXNAME%"><br />
                 Device Seven:<br /> <input type="text" name="deviceSeven" value="%DEVICESEVENNAME%"><br />
                 Device Eight:<br /> <input type="text" name="deviceEight" value="%DEVICEEIGHTNAME%"><br /><br />
-				Select Device Modes:<br />
-				<i>Select which device is connected to lighting, heating, cooling and auto top off equipment</i><br /><br />
-				Lighting:<br />
-				<select id="lighting" name="lighting">
-					<option value="0">Unused</option>
-					<option value="27">Device One</option>
-					<option value="26">Device Two</option>
-					<option value="25">Device Three</option>
-					<option value="33">Device Four</option>
-					<option value="32">Device Five</option>
-					<option value="17">Device Six</option>
-					<option value="18">Device Seven</option>
-					<option value="19">Device Eight</option>
-				</select><br />
-				Heating:<br />
-				<select id="heating" name="heating">
-					<option value="0">Unused</option>
-					<option value="27">Device One</option>
-					<option value="26">Device Two</option>
-					<option value="25">Device Three</option>
-					<option value="33">Device Four</option>
-					<option value="32">Device Five</option>
-					<option value="17">Device Six</option>
-					<option value="18">Device Seven</option>
-					<option value="19">Device Eight</option>
-				</select><br />
-				Cooling:<br />
-				<select id="cooling" name="cooling">
-					<option value="0">Unused</option>
-					<option value="27">Device One</option>
-					<option value="26">Device Two</option>
-					<option value="25">Device Three</option>
-					<option value="33">Device Four</option>
-					<option value="32">Device Five</option>
-					<option value="17">Device Six</option>
-					<option value="18">Device Seven</option>
-					<option value="19">Device Eight</option>
-				</select><br />
-				Auto Top-Off:<br />
-				<select id="ato" name="ato">
-					<option value="0">Unused</option>
-					<option value="27">Device One</option>
-					<option value="26">Device Two</option>
-					<option value="25">Device Three</option>
-					<option value="33">Device Four</option>
-					<option value="32">Device Five</option>
-					<option value="17">Device Six</option>
-					<option value="18">Device Seven</option>
-					<option value="19">Device Eight</option>
-				</select><br />
+                <b>Slave Mac Address:</b><br />
+                <i>Leave blank to broadcast to all ESP-NOW devices</i><br />
+                <input type="text" name="sMac"><br /><br />
+                Enable Automatic Temperature Control <input type="checkbox" name="enableTempCon" value="1" %TEMPCONCHECK%><br />
+				Enable Automatic Light Control <input type="checkbox" name="enableLightCon" value="1" %LIGHTCONCHECK%><br />
+				Enable Automatic ATO Control <input type="checkbox" name="enableATO" value="1" %ATOCHECK%><br /><br />
                 <input type="submit" value="Submit">
         </form>
         </div>
@@ -331,12 +289,14 @@ void doWiFi(void *parameter)
 {
     for (;;)
     {
+        // Disable AP connection if currently available.
+        WiFi.softAPdisconnect(true);
+        // Set WiFi mode to station mode.
+        WiFi.mode(WIFI_STA);
+        WiFi.setSleep(WIFI_PS_NONE);
+        espnow.espNowInit();
         if (settings.wifiSsid != "")
         {
-            // Disable AP connection if currently available.
-            WiFi.softAPdisconnect(true);
-            // Set WiFi mode to station mode.
-            WiFi.mode(WIFI_STA);
             // Connect to stored wifi credentials.
             WiFi.begin(settings.wifiSsid, settings.wifiPassword);
             // While WiFi status is not connected
@@ -346,19 +306,19 @@ void doWiFi(void *parameter)
                 switch (WiFi.status())
                 {
                 case 0:
-                    wifi.setStatus("IP: Network Init    ");
+                    wifi.setStatus("IP: Network Init");
                     break;
                 case 1:
-                    wifi.setStatus("IP: No SSID Avail   ");
+                    wifi.setStatus("IP: No SSID Avail");
                     break;
                 case 4:
-                    wifi.setStatus("IP: Network Failed  ");
+                    wifi.setStatus("IP: Network Failed");
                     break;
                 case 5:
-                    wifi.setStatus("IP: Connection Lost ");
+                    wifi.setStatus("IP: Connection Lost");
                     break;
                 case 6:
-                    wifi.setStatus("IP: Disconnected    ");
+                    wifi.setStatus("IP: Disconnected");
                     break;
                 }
                 // Delay for 500ms between connection attempts.
@@ -404,10 +364,10 @@ void WIFI::webServer()
                           settings.deviceSixName = request->getParam("deviceSix")->value();
                           settings.deviceSevenName = request->getParam("deviceSeven")->value();
                           settings.deviceEightName = request->getParam("deviceEight")->value();
-                          settings.lightGPIO = request->getParam("lighting")->value().toInt();
-                          settings.heatingGPIO = request->getParam("heating")->value().toInt();
-                          settings.coolingGPIO = request->getParam("cooling")->value().toInt();
-                          settings.atoGPIO = request->getParam("ato")->value().toInt();
+                          settings.enableTempCon = request->hasParam("enableTempCon") ? true : false;
+                          settings.enableLightCon = request->hasParam("enableLightCon") ? true : false;
+                          settings.enableATO = request->hasParam("enableATO") ? true : false;
+
                       }
                       // Let user know that the settings have been saved, start a new WiFi connect task to connect to new credentials.
                       // Return to init screen.
@@ -444,9 +404,9 @@ void WIFI::settingsConfig()
         menu.clearMenu();
 
         // Build our menu.
-        menu.setMenu(0, menuLineOne, "Connect to SSID:    ");
-        menu.setMenu(0, menuLineTwo, "AquariumController  ");
-        menu.setMenu(0, menuLineThree, "Navigate to:      ");
+        menu.setMenu(0, menuLineOne, "Connect to SSID:");
+        menu.setMenu(0, menuLineTwo, "AquariumController");
+        menu.setMenu(0, menuLineThree, "Navigate to:");
         menu.setMenu(0, menuLineFour, wifi.getCurrentStatus());
     }
     else

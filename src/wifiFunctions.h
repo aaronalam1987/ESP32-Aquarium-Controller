@@ -10,7 +10,7 @@ private:
     String wifiStatus;
 
 public:
-    WIFI() : wifiStatus("Not Set             "){};
+    WIFI() : wifiStatus("Not Set"){};
 
     void setStatus(String status)
     {

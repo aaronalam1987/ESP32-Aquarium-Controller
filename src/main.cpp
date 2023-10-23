@@ -4,15 +4,12 @@
 #include "settings.h"
 #include "wifiFunctions.h"
 #include "menuControl.h"
-#include "espnow.h"
 
 extern Menus menu;
 Settings settings;
 extern TempMonitor tempMonitor;
 extern WIFI wifi;
 System sys;
-
-extern espNow espnow;
 
 // Task handler for temperature probe monitoring and WiFi connection.
 TaskHandle_t doWifi;
@@ -77,7 +74,18 @@ void setup()
   pinMode(36, INPUT);
   pinMode(39, INPUT);
 
+  // If you do NOT need local relays (EG: you only use slave device), you do NOT need to specify this.
   // Assign relay/equipment pins.
+  // Relays should be connected as such:
+  // GPIO 27 - RELAY 1 (HEATING)
+  // GPIO 26 - RELAY 2 (COOLING)
+  // GPIO 25 - RELAY 3 (LIGHTING)
+  // GPIO 33 - RELAY 4 (ATO)
+  // GPIO 32 - RELAY 5 (N/A)
+  // GPIO 17 - RELAY 6 (N/A)
+  // GPIO 18 - RELAY 7 (N/A)
+  // GPIO 19 - RELAY 8 (N/A)
+  // Relay order is important as relay 1, 2, 3 and 4 must be specific to enable automated heating/cooling, lighting and ATO.
   pinMode(27, OUTPUT);
   pinMode(26, OUTPUT);
   pinMode(25, OUTPUT);
@@ -87,20 +95,19 @@ void setup()
   pinMode(18, OUTPUT);
   pinMode(19, OUTPUT);
 
+  // If you do NOT need local relays (EG: you only use slave device), you do NOT need to specify this.
   // Set all relays to initial state (relay is off, device connected via N/C);
-  digitalWrite(27, gpioON);
-  digitalWrite(26, gpioON);
-  digitalWrite(25, gpioON);
-  digitalWrite(33, gpioON);
-  digitalWrite(32, gpioON);
-  digitalWrite(17, gpioON);
-  digitalWrite(18, gpioON);
-  digitalWrite(19, gpioON);
+  digitalWrite(27, ON);
+  digitalWrite(26, ON);
+  digitalWrite(25, ON);
+  digitalWrite(33, ON);
+  digitalWrite(32, ON);
+  digitalWrite(17, ON);
+  digitalWrite(18, ON);
+  digitalWrite(19, ON);
 
   // Initialise Async webserver.
   wifi.webServer();
-
-  espnow.espNowInit();
 }
 
 void loop()
@@ -128,6 +135,5 @@ void loop()
 
   menu.drawMenu();
   delay(100);
-  Serial.println(WiFi.channel());
-  Serial.println(sys.getStatusArray(0, 1));
+  Serial.println(settings.enableTempCon);
 }

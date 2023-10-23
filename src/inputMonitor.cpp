@@ -9,9 +9,9 @@ void inputMonitor()
     // Check for buttonUp/Down press without buttonOK press, if we don't check that buttonOK is not pressed, we lose the ability to increment specific elements on menu pages.
     if (sys.buttonDown == LOW && sys.buttonOK != LOW)
     {
-        // Current menuSelect is less than or equal to menuLineFour (which is for int 3).
+        // Current menuSelect is less menuLineFour (which is for int 3).
         // Increment menuSelect.
-        if (menu.getMenuSelect() <= menuLineFour)
+        if (menu.getMenuSelect() < menuLineFour)
         {
             menu.setMenuSelect(menu.getMenuSelect() + 1);
         }

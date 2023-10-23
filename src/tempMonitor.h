@@ -14,7 +14,7 @@ private:
     String currentMode;
 
 public:
-    TempMonitor(OneWire *wire, DallasTemperature *sensor) : oneWire(wire), tempSensor(sensor), temperatureLog{{0}}, currentTemp{0}, currentMode("Wait") {}
+    TempMonitor(OneWire *wire, DallasTemperature *sensor) : oneWire(wire), tempSensor(sensor), temperatureLog{{0}}, currentTemp{0}, currentMode("DISD") {}
     void initialise()
     {
         tempSensor->begin();

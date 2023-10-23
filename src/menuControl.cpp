@@ -32,10 +32,12 @@ void Menus::drawMenu()
         {
             selected = ">";
         }
-        while (menu.getMenuArr(0, i).length() < 20)
+        // Loop to append " " to string until it is a full line, removing the need to clear screen.
+        while (menu.getMenuArr(0, i).length() < 19)
         {
             menu.setMenu(0, i, menu.getMenuArr(0, i) + " ");
         }
+
         lcd.setCursor(0, i);
         lcd.print(selected + menu.getMenuArr(0, i));
         selected = "";

@@ -4,7 +4,7 @@
 
 constexpr int menuInit{0}, menuOptions{1}, equipmentMenu{2}, tempControlMenu{3}, lightControlMenu{4}, settingsConfigMenu{5};
 constexpr int menuLineOne{0}, menuLineTwo{1}, menuLineThree{2}, menuLineFour{3};
-constexpr int gpioOFF{0}, gpioON{1};
+constexpr int OFF{0}, ON{1};
 
 class System
 {
