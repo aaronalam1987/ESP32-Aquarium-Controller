@@ -2,6 +2,7 @@
 #include "tempMonitor.h"
 #include <time.h>
 #include <ESP32Time.h>
+#include "wifiFunctions.h"
 
 const char *ntpServer = "pool.ntp.org";
 const long gmtOffSet = 0;
@@ -11,15 +12,19 @@ struct tm timeinfo;
 int timeChange{0}, dayChange{0};
 extern TempMonitor tempMonitor;
 extern System sys;
+extern WIFI wifi;
 
 void setRTC()
 {
+    //Check if WiFi is connected before trying to set RTC time otherwise if network is not available, it will hang.
+    if(WiFi.status() == WL_CONNECTED){
     configTime(gmtOffSet, daylightSavingsOffset, ntpServer);
     if (getLocalTime(&timeinfo))
     {
         rtc.setTimeStruct(timeinfo);
         timeChange = rtc.getHour(true);
         dayChange = rtc.getDayofWeek();
+    }
     }
 }
 
